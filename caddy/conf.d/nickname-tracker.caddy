@@ -1,0 +1,26 @@
+vekedb.duckdns.org {
+	# API endpoints under /api
+	handle /api/* {
+		reverse_proxy nickname-tracker-backend:3000
+	}
+
+	# Auth endpoints
+	handle /auth/* {
+		reverse_proxy nickname-tracker-backend:3000
+	}
+
+	# Players endpoints
+	handle /players* {
+		reverse_proxy nickname-tracker-backend:3000
+	}
+
+	# Swagger documentation
+	handle /api-json {
+		reverse_proxy nickname-tracker-backend:3000
+	}
+
+	# Frontend (catch-all)
+	handle {
+		reverse_proxy nickname-tracker-frontend:80
+	}
+}

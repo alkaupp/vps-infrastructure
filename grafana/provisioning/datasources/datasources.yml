@@ -1,0 +1,26 @@
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    uid: PBFA97CFB590B2093
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: false
+    jsonData:
+      exemplarTraceIdDestinations:
+        - datasourceUid: loki-datasource
+          name: loki
+
+  - name: Loki
+    type: loki
+    uid: loki-datasource
+    access: proxy
+    url: http://loki:3100
+    editable: false
+    jsonData:
+      derivedFields:
+        - datasourceUid: PBFA97CFB590B2093
+          matcherRegex: ".*"
+          name: prometheus

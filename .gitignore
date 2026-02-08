@@ -1,0 +1,19 @@
+# Environment files
+.env
+
+# Docker volumes (data is stored in named volumes)
+volumes/
+
+# Temporary files
+*.tmp
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,15 @@
+api-facade.duckdns.org {
+	# Grafana monitoring interface
+	handle /grafana/* {
+		reverse_proxy grafana:3000
+	}
+
+	handle /grafana {
+		reverse_proxy grafana:3000
+	}
+
+	# API Facade application (catch-all)
+	handle {
+		reverse_proxy api-facade-app:3000
+	}
+}

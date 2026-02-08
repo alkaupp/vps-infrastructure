@@ -1,0 +1,9 @@
+{
+	# Global options
+	email admin@duckdns.org
+	# Enable automatic HTTPS
+	auto_https on
+}
+
+# Import all project-specific configurations
+import conf.d/*.caddy
