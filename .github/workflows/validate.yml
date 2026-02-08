@@ -1,0 +1,111 @@
+name: Validate Configuration
+
+on:
+  pull_request:
+    branches:
+      - main
+      - master
+  push:
+    branches:
+      - '**'
+      - '!main'
+      - '!master'
+
+jobs:
+  validate:
+    name: Validate Infrastructure Configuration
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate docker-compose.yml
+        run: |
+          echo "🔍 Validating docker-compose.yml..."
+          docker compose config > /dev/null
+          echo "✅ docker-compose.yml is valid"
+
+      - name: Validate Caddy configuration
+        run: |
+          echo "🔍 Validating Caddy configuration..."
+
+          # Start Caddy in validation mode
+          docker run --rm \
+            -v $(pwd)/caddy:/etc/caddy:ro \
+            caddy:2-alpine \
+            caddy validate --config /etc/caddy/Caddyfile
+
+          echo "✅ Caddy configuration is valid"
+
+      - name: Check for required files
+        run: |
+          echo "🔍 Checking for required files..."
+
+          REQUIRED_FILES=(
+            "docker-compose.yml"
+            "caddy/Caddyfile"
+            "monitoring/loki.yml"
+            "monitoring/promtail.yml"
+            "monitoring/prometheus.yml"
+            ".env.example"
+            "README.md"
+          )
+
+          MISSING_FILES=0
+
+          for file in "${REQUIRED_FILES[@]}"; do
+            if [ ! -f "$file" ]; then
+              echo "❌ Missing required file: $file"
+              MISSING_FILES=$((MISSING_FILES + 1))
+            else
+              echo "✅ Found: $file"
+            fi
+          done
+
+          if [ $MISSING_FILES -gt 0 ]; then
+            echo "❌ $MISSING_FILES required file(s) missing"
+            exit 1
+          fi
+
+          echo "✅ All required files present"
+
+      - name: Check Caddy config files
+        run: |
+          echo "🔍 Checking Caddy configuration files..."
+
+          CADDY_CONFIGS=$(find caddy/conf.d -name "*.caddy" 2>/dev/null | wc -l)
+
+          if [ $CADDY_CONFIGS -eq 0 ]; then
+            echo "⚠️  No .caddy files found in caddy/conf.d/"
+            echo "This is unusual but not necessarily an error"
+          else
+            echo "✅ Found $CADDY_CONFIGS Caddy configuration file(s)"
+            find caddy/conf.d -name "*.caddy" -exec echo "  - {}" \;
+          fi
+
+      - name: Validate environment example
+        run: |
+          echo "🔍 Validating .env.example..."
+
+          if [ ! -f ".env.example" ]; then
+            echo "❌ .env.example not found"
+            exit 1
+          fi
+
+          # Check for required variables
+          REQUIRED_VARS=("GRAFANA_ADMIN_PASSWORD")
+
+          for var in "${REQUIRED_VARS[@]}"; do
+            if ! grep -q "^$var=" .env.example; then
+              echo "⚠️  Variable $var not found in .env.example"
+            else
+              echo "✅ Variable $var present"
+            fi
+          done
+
+      - name: Summary
+        run: |
+          echo "✅ All validation checks passed!"
+          echo ""
+          echo "Configuration is ready for deployment."

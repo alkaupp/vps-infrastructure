@@ -2,6 +2,13 @@
 
 This repository contains shared infrastructure services for all projects running on the server.
 
+## Deployment
+
+This infrastructure can be deployed:
+- **Automatically** via GitHub Actions (push to main/master)
+- **Manually** using the deployment scripts
+- See [GITHUB_ACTIONS.md](GITHUB_ACTIONS.md) for automated deployment setup
+
 ## Services
 
 - **Caddy**: Reverse proxy with automatic HTTPS

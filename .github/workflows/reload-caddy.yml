@@ -1,0 +1,59 @@
+name: Reload Caddy
+
+on:
+  workflow_dispatch:  # Manual trigger only
+    inputs:
+      reason:
+        description: 'Reason for reload'
+        required: false
+        default: 'Configuration update'
+
+jobs:
+  reload:
+    name: Reload Caddy Configuration
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Sync Caddy configuration
+        run: |
+          echo "📝 Syncing Caddy configuration..."
+          # Sync only Caddy directory
+          scp -r -i ~/.ssh/deploy_key caddy/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/infrastructure/
+
+      - name: Validate and reload Caddy
+        run: |
+          echo "🔍 Validating and reloading Caddy configuration..."
+
+          ssh -i ~/.ssh/deploy_key ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} bash << 'ENDSSH'
+            set -e
+            cd ~/infrastructure
+
+            # Validate configuration
+            echo "Validating configuration..."
+            docker compose exec -T caddy caddy validate --config /etc/caddy/Caddyfile
+
+            # Reload Caddy
+            echo "Reloading Caddy..."
+            docker compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile
+
+            echo "✅ Caddy reloaded successfully"
+          ENDSSH
+
+      - name: Summary
+        run: |
+          echo "✅ Caddy configuration reloaded successfully"
+          echo "Reason: ${{ github.event.inputs.reason }}"
+
+      - name: Cleanup
+        if: always()
+        run: rm -f ~/.ssh/deploy_key
